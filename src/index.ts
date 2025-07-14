@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import dotenv from "dotenv";
 import { GraphQLClient } from "graphql-request";
 import minimist from "minimist";
 import { z } from "zod";
+import express, { Request, Response } from "express";
+import cors from 'cors';
 
 // Import tools
 import { getCustomerOrders } from "./tools/getCustomerOrders.js";
@@ -69,6 +71,7 @@ getCustomerOrders.initialize(shopifyClient);
 updateCustomer.initialize(shopifyClient);
 
 // Set up MCP server
+const getServer = () => { 
 const server = new McpServer({
   name: "shopify",
   version: "1.0.0",
@@ -81,7 +84,7 @@ server.tool(
   "get-products",
   {
     searchTitle: z.string().optional(),
-    limit: z.number().default(10)
+    limit: z.number().default(100)
   },
   async (args) => {
     const result = await getProducts.execute(args);
@@ -108,7 +111,7 @@ server.tool(
   "get-customers",
   {
     searchQuery: z.string().optional(),
-    limit: z.number().default(10)
+    limit: z.number().default(100)
   },
   async (args) => {
     const result = await getCustomers.execute(args);
@@ -122,7 +125,7 @@ server.tool(
   "get-orders",
   {
     status: z.enum(["any", "open", "closed", "cancelled"]).default("any"),
-    limit: z.number().default(10)
+    limit: z.number().default(100)
   },
   async (args) => {
     const result = await getOrders.execute(args);
@@ -204,7 +207,7 @@ server.tool(
       .string()
       .regex(/^\d+$/, "Customer ID must be numeric")
       .describe("Shopify customer ID, numeric excluding gid prefix"),
-    limit: z.number().default(10)
+    limit: z.number().default(100)
   },
   async (args) => {
     const result = await getCustomerOrders.execute(args);
@@ -248,12 +251,83 @@ server.tool(
     };
   }
 );
+return server;
+}
+
+const app = express();
+app.use(express.json());
+
+// Configure CORS to expose Mcp-Session-Id header for browser-based clients
+app.use(cors({
+  origin: '*', // Allow all origins - adjust as needed for production
+  exposedHeaders: ['Mcp-Session-Id']
+}));
+
+app.post('/mcp', async (req: Request, res: Response) => {
+  const server = getServer();
+  try {
+    const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
+    res.on('close', () => {
+      console.log('Request closed');
+      transport.close();
+      server.close();
+    });
+  } catch (error) {
+    console.error('Error handling MCP request:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32603,
+          message: 'Internal server error',
+        },
+        id: null,
+      });
+    }
+  }
+});
+
+app.get('/mcp', async (req: Request, res: Response) => {
+  console.log('Received GET MCP request');
+  res.writeHead(405).end(JSON.stringify({
+    jsonrpc: "2.0",
+    error: {
+      code: -32000,
+      message: "Method not allowed."
+    },
+    id: null
+  }));
+});
+
+app.delete('/mcp', async (req: Request, res: Response) => {
+  console.log('Received DELETE MCP request');
+  res.writeHead(405).end(JSON.stringify({
+    jsonrpc: "2.0",
+    error: {
+      code: -32000,
+      message: "Method not allowed."
+    },
+    id: null
+  }));
+});
+
 
 // Start the server
-const transport = new StdioServerTransport();
-server
-  .connect(transport)
-  .then(() => {})
-  .catch((error: unknown) => {
-    console.error("Failed to start Shopify MCP Server:", error);
-  });
+const PORT = 3000;
+app.listen(PORT, (error) => {
+  if (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+  console.log(`MCP Stateless Streamable HTTP Server listening on port ${PORT}`);
+});
+
+// Handle server shutdown
+process.on('SIGINT', async () => {
+  console.log('Shutting down server...');
+  process.exit(0);
+});

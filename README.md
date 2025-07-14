@@ -45,31 +45,8 @@ To use this MCP server, you'll need to create a custom app in your Shopify store
 10. After installation, you'll see your **Admin API access token**
 11. Copy this token - you'll need it for configuration
 
-### Usage with Claude Desktop
+### Usage as streamable http mcp app
 
-Add this to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "shopify": {
-      "command": "npx",
-      "args": [
-        "shopify-mcp",
-        "--accessToken",
-        "<YOUR_ACCESS_TOKEN>",
-        "--domain",
-        "<YOUR_SHOP>.myshopify.com"
-      ]
-    }
-  }
-}
-```
-
-Locations for the Claude Desktop config file:
-
-- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
 ### Alternative: Run Locally with Environment Variables
 
@@ -84,24 +61,9 @@ If you prefer to use environment variables instead of command-line arguments:
 
 2. Run the server with npx:
    ```
-   npx shopify-mcp
+   npm run build
+   nom run start
    ```
-
-### Direct Installation (Optional)
-
-If you want to install the package globally:
-
-```
-npm install -g shopify-mcp
-```
-
-Then run it:
-
-```
-shopify-mcp --accessToken=<YOUR_ACCESS_TOKEN> --domain=<YOUR_SHOP>.myshopify.com
-```
-
-**⚠️ Important:** If you see errors about "SHOPIFY_ACCESS_TOKEN environment variable is required" when using command-line arguments, you might have a different package installed. Make sure you're using `shopify-mcp`, not `shopify-mcp-server`.
 
 ## Available Tools
 
