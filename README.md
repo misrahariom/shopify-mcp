@@ -62,9 +62,11 @@ If you prefer to use environment variables instead of command-line arguments:
 2. Run the server with npx:
    ```
    npm run build
-   nom run start
+   npm run start
    ```
-
+3. Once server is started, this mcp server can be exposed to internet by using npm mudule **localtunnel** (https://www.npmjs.com/package/localtunnel). 
+   Once it is installed use command ( ```lt --port 3000```) to start the localtunnel and you will get an internet url.
+   
 ## Available Tools
 
 ### Product Management
