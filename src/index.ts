@@ -13,6 +13,7 @@ import cors from 'cors';
 import { getCustomerOrders } from "./tools/getCustomerOrders.js";
 import { getCustomers } from "./tools/getCustomers.js";
 import { getOrderById } from "./tools/getOrderById.js";
+import { getOrderByName } from "./tools/getOrderByName.js";
 import { getOrders } from "./tools/getOrders.js";
 import { getProductById } from "./tools/getProductById.js";
 import { getProducts } from "./tools/getProducts.js";
@@ -29,7 +30,6 @@ dotenv.config();
 const SHOPIFY_ACCESS_TOKEN =
   argv.accessToken || process.env.SHOPIFY_ACCESS_TOKEN;
 const MYSHOPIFY_DOMAIN = argv.domain || process.env.MYSHOPIFY_DOMAIN;
-
 // Store in process.env for backwards compatibility
 process.env.SHOPIFY_ACCESS_TOKEN = SHOPIFY_ACCESS_TOKEN;
 process.env.MYSHOPIFY_DOMAIN = MYSHOPIFY_DOMAIN;
@@ -66,6 +66,7 @@ getProductById.initialize(shopifyClient);
 getCustomers.initialize(shopifyClient);
 getOrders.initialize(shopifyClient);
 getOrderById.initialize(shopifyClient);
+getOrderByName.initialize(shopifyClient);
 updateOrder.initialize(shopifyClient);
 getCustomerOrders.initialize(shopifyClient);
 updateCustomer.initialize(shopifyClient);
@@ -143,6 +144,20 @@ server.tool(
   },
   async (args) => {
     const result = await getOrderById.execute(args);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }]
+    };
+  }
+);
+
+// Add the getOrderByName tool
+server.tool(
+  "get-order-by-name",
+  {
+    name: z.string().min(1)
+  },
+  async (args) => {
+    const result = await getOrderByName.execute(args);
     return {
       content: [{ type: "text", text: JSON.stringify(result) }]
     };

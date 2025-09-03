@@ -127,7 +127,13 @@ If you prefer to use environment variables instead of command-line arguments:
    - Inputs:
      - `orderId` (string, required): Full Shopify order numerical ID i.e only numeric value after "gid://shopify/Order/" (e.g., 6090960994370 from OrderId "gid://shopify/Order/6090960994370")
 
-3. `update-order`
+3. `get-order-by-name`
+
+   - Get a specific order by name
+   - Inputs:
+     - `name` (string, required): Shopify order Name i.e (e.g. 1022)
+
+4. `update-order`
 
    - Update an existing order with new information
    - Inputs:
