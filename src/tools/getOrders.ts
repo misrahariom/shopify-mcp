@@ -5,7 +5,7 @@ import { z } from "zod";
 // Input schema for getOrders
 const GetOrdersInputSchema = z.object({
   status: z.enum(["any", "open", "closed", "cancelled"]).default("any"),
-  limit: z.number().default(100)
+  limit: z.number().default(10)
 });
 
 type GetOrdersInput = z.infer<typeof GetOrdersInputSchema>;
