@@ -19,6 +19,7 @@ import { getProductById } from "./tools/getProductById.js";
 import { getProducts } from "./tools/getProducts.js";
 import { updateCustomer } from "./tools/updateCustomer.js";
 import { updateOrder } from "./tools/updateOrder.js";
+import { createProduct } from "./tools/createProduct.js";
 
 // Parse command line arguments
 const argv = minimist(process.argv.slice(2));
@@ -70,6 +71,7 @@ getOrderByNumber.initialize(shopifyClient);
 updateOrder.initialize(shopifyClient);
 getCustomerOrders.initialize(shopifyClient);
 updateCustomer.initialize(shopifyClient);
+createProduct.initialize(shopifyClient);
 
 // Set up MCP server
 const getServer = () => { 
@@ -330,6 +332,25 @@ app.delete('/mcp', async (req: Request, res: Response) => {
   }));
 });
 
+
+// Add the createProduct tool
+server.tool(
+  "create-product",
+  {
+    title: z.string().min(1),
+    descriptionHtml: z.string().optional(),
+    vendor: z.string().optional(),
+    productType: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]).default("DRAFT"),
+  },
+  async (args) => {
+    const result = await createProduct.execute(args);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }]
+    };
+  }
+);
 
 // Start the server
 const PORT = 3000;
