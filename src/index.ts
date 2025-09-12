@@ -13,7 +13,7 @@ import cors from 'cors';
 import { getCustomerOrders } from "./tools/getCustomerOrders.js";
 import { getCustomers } from "./tools/getCustomers.js";
 import { getOrderById } from "./tools/getOrderById.js";
-import { getOrderByName } from "./tools/getOrderByName.js";
+import { getOrderByNumber } from "./tools/getOrderByNumber.js";
 import { getOrders } from "./tools/getOrders.js";
 import { getProductById } from "./tools/getProductById.js";
 import { getProducts } from "./tools/getProducts.js";
@@ -66,7 +66,7 @@ getProductById.initialize(shopifyClient);
 getCustomers.initialize(shopifyClient);
 getOrders.initialize(shopifyClient);
 getOrderById.initialize(shopifyClient);
-getOrderByName.initialize(shopifyClient);
+getOrderByNumber.initialize(shopifyClient);
 updateOrder.initialize(shopifyClient);
 getCustomerOrders.initialize(shopifyClient);
 updateCustomer.initialize(shopifyClient);
@@ -150,14 +150,14 @@ server.tool(
   }
 );
 
-// Add the getOrderByName tool
+// Add the getOrderByNumber tool
 server.tool(
-  "get-order-by-name",
+  "get-order-by-number",
   {
-    name: z.string().min(1)
+    orderNumber: z.string().min(1)
   },
   async (args) => {
-    const result = await getOrderByName.execute(args);
+    const result = await getOrderByNumber.execute(args);
     return {
       content: [{ type: "text", text: JSON.stringify(result) }]
     };

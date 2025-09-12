@@ -3,19 +3,19 @@ import { gql } from "graphql-request";
 import { z } from "zod";
 
 // Input schema for getOrderById
-const GetOrderByNameInputSchema = z.object({
-  name: z.string().min(1)
+const getOrderByNumberInputSchema = z.object({
+  orderNumber: z.string().min(1)
 });
 
-type GetOrderByIdInput = z.infer<typeof GetOrderByNameInputSchema>;
+type GetOrderByIdInput = z.infer<typeof getOrderByNumberInputSchema>;
 
 // Will be initialized in index.ts
 let shopifyClient: GraphQLClient;
 
-const getOrderByName = {
-  name: "get-order-by-name",
-  description: "Get a specific order by name",
-  schema: GetOrderByNameInputSchema,
+const getOrderByNumber = {
+  name: "get-order-by-number",
+  description: "Get a specific order by number",
+  schema: getOrderByNumberInputSchema,
 
   // Add initialize method to set up the GraphQL client
   initialize(client: GraphQLClient) {
@@ -24,10 +24,10 @@ const getOrderByName = {
 
   execute: async (input: GetOrderByIdInput) => {
     try {
-      const { name } = input;
+      const { orderNumber } = input;
       const query = gql`
-        query GetOrdersByName($name: String) {
-          orders(first: 10, query: $name) {
+        query GetOrdersByNumber($name: String) {
+          orders(first: 1, query: $name) {
             edges {
               node {
                 id
@@ -67,6 +67,15 @@ const getOrderByName = {
                   phone
                 }
                 shippingAddress {
+                  address1
+                  address2
+                  city
+                  provinceCode
+                  zip
+                  country
+                  phone
+                }
+                billingAddress {
                   address1
                   address2
                   city
@@ -115,19 +124,28 @@ const getOrderByName = {
       `;
 
       const variables = {
-        name: `${name}`
+        name: `${orderNumber}`
       };
       const data = (await shopifyClient.request(query, variables)) as {
         orders: any;
       };
 
       if (!data.orders.edges) {
-        throw new Error(`Order with Name ${name} not found`);
+        throw new Error(`No orders found`);
       }
 
+      const matchingOrder= data.orders.edges.find((orderEdge : any) => {
+        const order = orderEdge.node;
+        const cleanedOrderName = order.name.replace(/\D/g, '');
+        const cleanedOrderNumber = orderNumber.replace(/\D/g, '');
+        return cleanedOrderName === cleanedOrderNumber;
+      })?.node;
+      
+      if (!matchingOrder) {
+        throw new Error(`Order with Number ${orderNumber} not found`);
+      }
       // Extract and format order data
-      const order = data.orders.edges[0].node;
-
+      const order= matchingOrder;
       // Format line items
       const lineItems = order.lineItems.edges.map((lineItemEdge: any) => {
         const lineItem = lineItemEdge.node;
@@ -178,6 +196,7 @@ const getOrderByName = {
             }
           : null,
         shippingAddress: order.shippingAddress,
+        billingAddress: order.billingAddress,
         lineItems,
         tags: order.tags,
         note: order.note,
@@ -196,4 +215,4 @@ const getOrderByName = {
   }
 };
 
-export { getOrderByName };
+export { getOrderByNumber };
