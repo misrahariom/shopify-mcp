@@ -110,6 +110,25 @@ server.tool(
   }
 );
 
+// Add the createProduct tool
+server.tool(
+  "create-product",
+  {
+    title: z.string().min(1),
+    descriptionHtml: z.string().optional(),
+    vendor: z.string().optional(),
+    productType: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]).default("DRAFT"),
+  },
+  async (args) => {
+    const result = await createProduct.execute(args);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result) }]
+    };
+  }
+);
+
 server.tool(
   "get-customers",
   {
@@ -331,26 +350,6 @@ app.delete('/mcp', async (req: Request, res: Response) => {
     id: null
   }));
 });
-
-
-// Add the createProduct tool
-server.tool(
-  "create-product",
-  {
-    title: z.string().min(1),
-    descriptionHtml: z.string().optional(),
-    vendor: z.string().optional(),
-    productType: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    status: z.enum(["ACTIVE", "DRAFT", "ARCHIVED"]).default("DRAFT"),
-  },
-  async (args) => {
-    const result = await createProduct.execute(args);
-    return {
-      content: [{ type: "text", text: JSON.stringify(result) }]
-    };
-  }
-);
 
 // Start the server
 const PORT = 3000;
