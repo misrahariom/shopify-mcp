@@ -59,10 +59,29 @@ If you prefer to use environment variables instead of command-line arguments:
    MYSHOPIFY_DOMAIN=your-store.myshopify.com
    ```
 
-2. Run the server with npx:
+2. Run the server with npm:
+
+    Build project code
    ```
    npm run build
-   npm run start
+   ```
+
+3. Run the stdio server(Default) and inspector:
+   ```
+   npm start
+   npm run inspect
+   ```
+
+4. Run the sse server(url:http://localhost:3001/sse) and inspector:
+   ```
+   npm run sse
+   npm run inspect-sse
+   ```
+
+5. Run the streamable http server(url:http://localhost:3000/mcp) and inspector:
+   ```
+   npm run http
+   npm run inspect-http
    ```
 3. Once server is started, this mcp server can be exposed to internet by using npm mudule **localtunnel** (https://www.npmjs.com/package/localtunnel). 
    Once it is installed use command ( ```lt --port 3000```) to start the localtunnel and you will get an internet url.
