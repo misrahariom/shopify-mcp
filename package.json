@@ -13,6 +13,7 @@
     "http": "node dist/index.js --transport=http",
     "stdio": "node dist/index.js --transport=stdio",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js  --transport=http",
+    "inspect-http": "npx @modelcontextprotocol/inspector node dist/index.js  --transport=http",
     "inspect-sse": "npx @modelcontextprotocol/inspector node dist/index.js --transport=sse",
     "inspect-stdio": "npx @modelcontextprotocol/inspector node dist/index.js --transport=stdio",
     "test": "jest",

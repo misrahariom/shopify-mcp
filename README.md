@@ -66,10 +66,10 @@ If you prefer to use environment variables instead of command-line arguments:
    npm run build
    ```
 
-3. Run the stdio server(Default) and inspector:
+3. Run the stdio server and inspector:
    ```
-   npm start
-   npm run inspect
+   npm run stdio
+   npm run inspect-stdio
    ```
 
 4. Run the sse server(url:http://localhost:3001/sse) and inspector:
@@ -78,13 +78,18 @@ If you prefer to use environment variables instead of command-line arguments:
    npm run inspect-sse
    ```
 
-5. Run the streamable http server(url:http://localhost:3000/mcp) and inspector:
+5. Run the (Default) streamable http server(url:http://localhost:3000/mcp) and inspector:
    ```
+   npm run start
+   npm run inspect
+   or
+
    npm run http
    npm run inspect-http
    ```
-3. Once server is started, this mcp server can be exposed to internet by using npm mudule **localtunnel** (https://www.npmjs.com/package/localtunnel). 
+6. Once server is started, this mcp server can be exposed to internet by using npm mudule **localtunnel** (https://www.npmjs.com/package/localtunnel). 
    Once it is installed use command ( ```lt --port 3000```) to start the localtunnel and you will get an internet url.
+   You can use **ngrok** also. Please run comment ```ngrok http 3000``` for this.
    
 ## Available Tools
 
@@ -155,11 +160,11 @@ If you prefer to use environment variables instead of command-line arguments:
    - Inputs:
      - `orderId` (string, required): Full Shopify order numerical ID i.e only numeric value after "gid://shopify/Order/" (e.g., 6090960994370 from OrderId "gid://shopify/Order/6090960994370")
 
-3. `get-order-by-name`
+3. `get-order-by-number`
 
-   - Get a specific order by name
+   - Get a specific order by number
    - Inputs:
-     - `name` (string, required): Shopify order Name i.e (e.g. 1022)
+     - `orderNumber` (string, required): Shopify order Name i.e (e.g. 1022)
 
 4. `update-order`
 
