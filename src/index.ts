@@ -24,6 +24,7 @@ import { getProducts } from "./tools/getProducts.js";
 import { updateCustomer } from "./tools/updateCustomer.js";
 import { updateOrder } from "./tools/updateOrder.js";
 import { createProduct } from "./tools/createProduct.js";
+import { getDiscounts } from "./tools/getDiscount.js";
 
 // Parse command line arguments
 const argv = minimist(process.argv.slice(2));
@@ -61,7 +62,7 @@ const SSE_PORT = parseInt(argv.ssePort || process.env.SSE_PORT || "3001");
 
 // Create Shopify GraphQL client
 const shopifyClient = new GraphQLClient(
-  `https://${MYSHOPIFY_DOMAIN}/admin/api/2023-07/graphql.json`,
+  `https://${MYSHOPIFY_DOMAIN}/admin/api/2025-10/graphql.json`,
   {
     headers: {
       "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
@@ -81,6 +82,7 @@ updateOrder.initialize(shopifyClient);
 getCustomerOrders.initialize(shopifyClient);
 updateCustomer.initialize(shopifyClient);
 createProduct.initialize(shopifyClient);
+getDiscounts.initialize(shopifyClient);
 
 // Set up MCP server
 const getServer = () => { 
@@ -91,6 +93,18 @@ const server = new McpServer({
     "MCP Server for Shopify API, enabling interaction with store data through GraphQL API"
 });
 
+server.tool(
+  "get-discounts",
+  {
+    limit: z.number().default(10)
+  },
+  async(args) => {
+    const result = await getDiscounts.execute(args);
+    return {
+       content: [{ type: "text", text: JSON.stringify(result) }]
+    }
+  }
+);
 // Add tools individually, using their schemas directly
 server.tool(
   "get-products",
@@ -167,7 +181,7 @@ server.tool(
 );
 
 // Add the getOrderById tool
-server.tool(
+/*server.tool(
   "get-order-by-id",
   {
     orderId: z.string().min(1)
@@ -178,7 +192,7 @@ server.tool(
       content: [{ type: "text", text: JSON.stringify(result) }]
     };
   }
-);
+);*/
 
 // Add the getOrderByNumber tool
 server.tool(

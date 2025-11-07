@@ -16,6 +16,7 @@ MCP Server for Shopify API, enabling interaction with store data through GraphQL
 - **Product Management**: Search and retrieve product information
 - **Customer Management**: Load customer data and manage customer tags
 - **Order Management**: Advanced order querying and filtering
+- **Discount Management**: Advanced discount querying and filtering
 - **GraphQL Integration**: Direct integration with Shopify's GraphQL Admin API
 - **Comprehensive Error Handling**: Clear error messages for API and authentication issues
 
@@ -39,6 +40,7 @@ To use this MCP server, you'll need to create a custom app in your Shopify store
    - `read_products`, `write_products`
    - `read_customers`, `write_customers`
    - `read_orders`, `write_orders`
+   - `read_discounts`
 7. Click **Save**
 8. Click **Install app**
 9. Click **Install** to give the app access to your store data
@@ -177,6 +179,15 @@ If you prefer to use environment variables instead of command-line arguments:
      - `customAttributes` (array of objects, optional): Custom attributes for the order
      - `metafields` (array of objects, optional): Order metafields
      - `shippingAddress` (object, optional): Shipping address information
+	 
+### Discount Management
+
+1. `get-discounts`
+
+   - Get all discounts
+   - Inputs:
+     - `limit` (number): Maximum number of discount to return ( default 10)
+
 
 ## Debugging
 
