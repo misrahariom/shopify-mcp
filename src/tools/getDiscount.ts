@@ -24,47 +24,130 @@ const getDiscounts = {
         const { limit } = input;
 
         const query = gql`
-            query ListAllCodeDiscounts($first: Int!) {
-                codeDiscountNodes(first: $first) {
-                    nodes {
-                    id
-                    codeDiscount {
-                        ... on DiscountCodeBasic {
-                        __typename
-                        title
-                        codes(first: $first) {
-                            nodes {
-                                code
-                            }
+        query ListAllCodeDiscounts($first: Int!) {
+            codeDiscountNodes(first: $first) {
+                nodes {
+                id,
+                codeDiscount {
+                    ... on DiscountCodeBasic {
+                    __typename
+                    title
+                    status
+                    codes(first:$first){
+                        nodes{
+                        code
                         }
-                        summary
-                        context {
-                            __typename
-                            ... on DiscountCustomers {
-                                customers {
+                    }
+                    summary
+                    context
+                        {
+                            __typename,
+                            ... on DiscountCustomers{
+                                customers
+                                {
                                     __typename
+                                }
+                                }
+                        }
+                    }
+                    ... on DiscountCodeBxgy {
+                    __typename
+                    title
+                    status
+                    codes(first:$first){
+                        nodes
+                        {
+                            code
+                        }
+                    }
+                    summary
+                    customerBuys{
+                        items
+                        {
+                        __typename
+                        ... on DiscountProducts
+                        {
+                            __typename,
+                            products(first:$first)
+                            {
+                                nodes 
+                                {
+                                    id
+                                    title
+                                    description
                                 }
                             }
                         }
-                        }
-                        ... on DiscountCodeBxgy {
+                        },
+                        value {
                         __typename
-                        title
-                        codesCount {
-                            count
+                        ... on DiscountPurchaseAmount
+                        {
+                            amount 
                         }
-                        codes(first: $first) {
-                            nodes {
-                                code
+                        ... on DiscountQuantity
+                        {
+                            quantity
+                        }
+                        }
+                    }
+                    customerGets {
+                        items
+                        {
+                        __typename
+                        ... on DiscountProducts
+                            {
+                                __typename,
+                                products(first:$first)
+                                {
+                                    nodes
+                                    {
+                                        title
+                                        description
+                                    }
+                                }
                             }
                         }
-                        summary
+                        value {
+                        __typename
+                        ... on DiscountAmount
+                        {
+                            amount{
+                            amount,
+                            currencyCode
+                            }
+                        }
+                        ... on DiscountOnQuantity
+                        {
+                            quantity{
+                            quantity
+                            }
+                            effect{
+                            __typename,
+                            ... on DiscountPercentage 
+                            {
+                                percentage
+                            }
+                            ... on DiscountAmount
+                            {
+                                amount{
+                                amount
+                                }
+                                appliesOnEachItem
+                            }
+                            }
+                        }
+                        ... on DiscountPercentage
+                        {
+                            percentage
+                        }
                         }
                     }
                     }
                 }
+                }
             }
-
+            }
         `;
 
         const variables = {
@@ -77,6 +160,18 @@ const getDiscounts = {
        // const discounts = data.codeDiscountNodes;
        const discounts = data.codeDiscountNodes.nodes.map((node: any) => {
             const discount = node;
+            const  customerbuysProduct = discount.codeDiscount.customerBuys?.items?.products?.nodes.map((productNode:any) => {
+                    return {
+                        title: productNode.title,
+                        description: productNode.description
+                    }
+                });
+            const customerGetsProduct = discount.codeDiscount.customerGets?.items?.products?.nodes.map((productNode:any) => {
+                    return {
+                        title: productNode.title,
+                        description: productNode.description
+                    }
+                });
             return {
                 id: discount.id,
                 title: discount.codeDiscount.title,
@@ -87,7 +182,19 @@ const getDiscounts = {
                         
                         }
                 }),
-                summary: discount.codeDiscount.summary
+                summary: discount.codeDiscount.summary,
+                //customerbuys1: discount.codeDiscount.customerBuys,
+                customerBuysDetails: {
+                    product: customerbuysProduct,
+                    quantity:discount.codeDiscount.customerBuys?.value?.quantity
+                },
+                //customergets1: discount.codeDiscount.customerGets,
+                customerGetsDetails: {
+                    product: customerGetsProduct,
+                    quantity: discount.codeDiscount.customerGets?.value?.quantity.quantity,
+                    typeName: discount.codeDiscount.customerGets?.value?.effect.__typename,
+                    percentage: discount.codeDiscount.customerGets?.value?.effect.percentage,
+                }
             };
         
         });
