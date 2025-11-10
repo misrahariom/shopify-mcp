@@ -157,48 +157,85 @@ const getDiscounts = {
         const data = (await shopifyClient.request(query, variables)) as {
             codeDiscountNodes: any;
         };
-       // const discounts = data.codeDiscountNodes;
-       const discounts = data.codeDiscountNodes.nodes.map((node: any) => {
-            const discount = node;
-            const  customerbuysProduct = discount.codeDiscount.customerBuys?.items?.products?.nodes.map((productNode:any) => {
-                    return {
-                        title: productNode.title,
-                        description: productNode.description
-                    }
-                });
-            const customerGetsProduct = discount.codeDiscount.customerGets?.items?.products?.nodes.map((productNode:any) => {
-                    return {
-                        title: productNode.title,
-                        description: productNode.description
-                    }
-                });
-            return {
-                id: discount.id,
-                title: discount.codeDiscount.title,
-                code: discount.codeDiscount.codes.nodes.map((node: any) => {
-                        const code = node;
-                        return{
-                            applicableCode:code.code
-                        
-                        }
-                }),
-                summary: discount.codeDiscount.summary,
-                //customerbuys1: discount.codeDiscount.customerBuys,
-                customerBuysDetails: {
-                    product: customerbuysProduct,
-                    quantity:discount.codeDiscount.customerBuys?.value?.quantity
-                },
-                //customergets1: discount.codeDiscount.customerGets,
-                customerGetsDetails: {
-                    product: customerGetsProduct,
-                    quantity: discount.codeDiscount.customerGets?.value?.quantity.quantity,
-                    typeName: discount.codeDiscount.customerGets?.value?.effect.__typename,
-                    percentage: discount.codeDiscount.customerGets?.value?.effect.percentage,
-                }
-            };
-        
+        // Deep cleaner: removes nulls, undefined, empty strings, empty arrays, and empty objects recursively
+        function cleanObject(obj: any): any {
+        if (Array.isArray(obj)) {
+            const cleanedArray = obj
+            .map(cleanObject)
+            .filter((v) => v != null && !(typeof v === "object" && Object.keys(v).length === 0));
+            return cleanedArray.length > 0 ? cleanedArray : undefined;
+        } else if (obj && typeof obj === "object") {
+            const cleanedObj = Object.entries(obj).reduce((acc, [key, value]) => {
+            const cleanedValue = cleanObject(value);
+            if (
+                cleanedValue != null &&
+                cleanedValue !== "" &&
+                !(typeof cleanedValue === "object" && Object.keys(cleanedValue).length === 0)
+            ) {
+                acc[key] = cleanedValue;
+            }
+            return acc;
+            }, {} as any);
+            return Object.keys(cleanedObj).length > 0 ? cleanedObj : undefined;
+        }
+        return obj;
+        }
+        // Helper: extract effect details
+        function extractEffect(effect: any): string | undefined {
+        if (!effect || !effect.__typename) return undefined;
+
+        switch (effect.__typename) {
+            case "DiscountPercentage": {
+            const pct = effect.percentage;
+            return typeof pct === "number" ? `${pct * 100}%` : undefined;
+            }
+            case "DiscountAmount": {
+            const amt = effect.amount?.amount;
+            return amt ? `$${amt}` : undefined;
+            }
+            case "DiscountFree":
+            case "Free":
+            return "Free";
+            default:
+            return undefined;
+        }
+        }
+        console.log("codeDiscountNodes:", util.inspect(data.codeDiscountNodes, false, null, true));
+        // Main transformation logic
+        const discounts = data.codeDiscountNodes.nodes.map((node: any) => {
+        const discount = node.codeDiscount;
+        console.log("discount:", util.inspect(discount, false, null, true));
+        const mapProducts = (productNodes: any[]) =>
+            productNodes?.map((product: any) => ({
+            title: product.title,
+            description: product.description,
+            })) || [];
+
+        const customerBuys = discount.customerBuys;
+        const customerGets = discount.customerGets;
+        const effect = customerGets?.value?.effect;
+        const transformed = {
+            id: node.id,
+            title: discount.title,
+            summary: discount.summary,
+            codes: discount.codes?.nodes?.map((c: any) => ({
+            applicableCode: c.code,
+            })) || [],
+            customerBuys: {
+            products: mapProducts(customerBuys?.items?.products?.nodes),
+            quantity: customerBuys?.value?.quantity,
+            },
+            customerGets: {
+            products: mapProducts(customerGets?.items?.products?.nodes),
+            quantity: customerGets?.value?.quantity?.quantity,
+            typeName: customerGets?.value?.effect?.__typename,
+            effectValue: extractEffect(effect),
+            },
+        };
+        return cleanObject(transformed);
         });
-        console.log("discounts: " + util.inspect(data.codeDiscountNodes, false, null, true /* enable colors */));
+
+        console.log("Discounts:", util.inspect(discounts, false, null, true));
 
         return {discounts};
     } catch (error) {
