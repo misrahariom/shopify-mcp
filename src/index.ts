@@ -6,12 +6,12 @@ import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 import { randomUUID } from "node:crypto";
-import dotenv from "dotenv";
-import { GraphQLClient } from "graphql-request";
-import minimist from "minimist";
 import { z } from "zod";
 import express, { Request, Response } from "express";
 import cors from 'cors';
+import bodyParser from "body-parser";
+import { inboundCall } from "./twilio/inbound.js";
+import { verifyPin } from "./twilio/verifyPin.js";
 
 // Import tools
 import { getCustomerOrders } from "./tools/getCustomerOrders.js";
@@ -25,51 +25,12 @@ import { updateCustomer } from "./tools/updateCustomer.js";
 import { updateOrder } from "./tools/updateOrder.js";
 import { createProduct } from "./tools/createProduct.js";
 import { getDiscounts } from "./tools/getDiscount.js";
-
-// Parse command line arguments
-const argv = minimist(process.argv.slice(2));
-
-// Load environment variables from .env file (if it exists)
-dotenv.config();
-
-// Define environment variables - from command line or .env file
-const SHOPIFY_ACCESS_TOKEN =
-  argv.accessToken || process.env.SHOPIFY_ACCESS_TOKEN;
-const MYSHOPIFY_DOMAIN = argv.domain || process.env.MYSHOPIFY_DOMAIN;
-// Store in process.env for backwards compatibility
-process.env.SHOPIFY_ACCESS_TOKEN = SHOPIFY_ACCESS_TOKEN;
-process.env.MYSHOPIFY_DOMAIN = MYSHOPIFY_DOMAIN;
-
-// Validate required environment variables
-if (!SHOPIFY_ACCESS_TOKEN) {
-  console.error("Error: SHOPIFY_ACCESS_TOKEN is required.");
-  console.error("Please provide it via command line argument or .env file.");
-  console.error("  Command line: --accessToken=your_token");
-  process.exit(1);
-}
-
-if (!MYSHOPIFY_DOMAIN) {
-  console.error("Error: MYSHOPIFY_DOMAIN is required.");
-  console.error("Please provide it via command line argument or .env file.");
-  console.error("  Command line: --domain=your-store.myshopify.com");
-  process.exit(1);
-}
+import { argv, shopifyClient } from "./shopify/shopifyClient.js";
 
 // Server configuration
 const TRANSPORT_TYPE = argv.transport || process.env.TRANSPORT_TYPE || "stdio";
 const HTTP_PORT = parseInt(argv.port || process.env.HTTP_PORT || "3000");
 const SSE_PORT = parseInt(argv.ssePort || process.env.SSE_PORT || "3001");
-
-// Create Shopify GraphQL client
-const shopifyClient = new GraphQLClient(
-  `https://${MYSHOPIFY_DOMAIN}/admin/api/2025-10/graphql.json`,
-  {
-    headers: {
-      "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-      "Content-Type": "application/json"
-    }
-  }
-);
 
 // Initialize tools with shopifyClient
 getProducts.initialize(shopifyClient);
@@ -315,6 +276,10 @@ return server;
 
 const app = express();
 app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.post("/twilio/inbound", inboundCall);
+app.post("/twilio/verify-pin", verifyPin);
 
 // Function to start server with different transports
 async function startServer() {
@@ -418,7 +383,7 @@ async function startServer() {
         };
 
         // Handle GET requests for server-to-client notifications via SSE
-        app.get('/mcp', handleSessionRequest);
+        // app.get('/mcp', handleSessionRequest);
 
         // Handle DELETE requests for session termination
         app.delete('/mcp', handleSessionRequest);
