@@ -25,7 +25,7 @@ const getOrderById = {
   execute: async (input: GetOrderByIdInput) => {
     try {
       const { orderId } = input;
-
+      const orderGid  = `gid://shopify/Order/${orderId}`;
       const query = gql`
         query GetOrderById($id: ID!) {
           order(id: $id) {
@@ -112,7 +112,7 @@ const getOrderById = {
       `;
 
       const variables = {
-        id: orderId
+        id: orderGid
       };
 
       const data = (await shopifyClient.request(query, variables)) as {

@@ -7,8 +7,15 @@
   "type": "module",
   "scripts": {
     "build": "rimraf dist && tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node --esm src/index.ts",
+    "start": "node dist/index.js --transport=http",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "sse": "node dist/index.js --transport=sse",
+    "http": "node dist/index.js --transport=http",
+    "stdio": "node dist/index.js --transport=stdio",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js  --transport=http",
+    "inspect-http": "npx @modelcontextprotocol/inspector node dist/index.js  --transport=http",
+    "inspect-sse": "npx @modelcontextprotocol/inspector node dist/index.js --transport=sse",
+    "inspect-stdio": "npx @modelcontextprotocol/inspector node dist/index.js --transport=stdio",
     "test": "jest",
     "prepublishOnly": "npm run build",
     "lint": "eslint 'src/**/*.ts'",
@@ -47,7 +54,8 @@
     "rimraf": "^5.0.10",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.2"
   },
   "files": [
     "dist",
