@@ -25,23 +25,16 @@ export async function findCustomerByPhone(phone: string) {
         }
         }
     `;
-    console.log("::{q}uery::", {q},":::query::", q);
-    console.log("::shopifyClient::", shopifyClient);
     const result:any = await shopifyClient.request(query, {q});
-    console.log("::result::", result);
     const node = result.customers.edges[0]?.node;
-    console.log("::customer node::", node);
     return node || null;
 }
 
 export function extractPin(customer: any) {
-    console.log("customer", customer)
-    console.log("metafields", customer.metafields)
-    console.log("edges", customer.metafields?.edges)
-  const fields = customer.metafields?.edges || [];
-  const field = fields.find(
-    (m:any) => m.node.namespace === "custom" && m.node.key === "pin"
-  );
-  console.log("field?.node?.value", field?.node?.value)
-  return field?.node?.value || null;
+    const fields = customer.metafields?.edges || [];
+    const field = fields.find(
+        (m:any) => m.node.namespace === "custom" && m.node.key === "pin"
+    );
+    console.log("PIN:", field?.node?.value)
+    return field?.node?.value || null;
 }

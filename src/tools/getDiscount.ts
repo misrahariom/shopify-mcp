@@ -200,7 +200,7 @@ const getDiscounts = {
             return undefined;
         }
         }
-        console.log("codeDiscountNodes:", util.inspect(data.codeDiscountNodes, false, null, true));
+        // console.log("codeDiscountNodes:", util.inspect(data.codeDiscountNodes, false, null, true));
         // Main transformation logic
         const discounts = data.codeDiscountNodes.nodes.map((node: any) => {
         const discount = node.codeDiscount;
