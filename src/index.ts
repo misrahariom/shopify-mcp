@@ -28,7 +28,7 @@ import { getDiscounts } from "./tools/getDiscount.js";
 import { argv, shopifyClient } from "./shopify/shopifyClient.js";
 
 // Server configuration
-const TRANSPORT_TYPE = argv.transport || process.env.TRANSPORT_TYPE || "stdio";
+const TRANSPORT_TYPE = argv.transport || process.env.TRANSPORT_TYPE || "http";
 const HTTP_PORT = parseInt(argv.port || process.env.HTTP_PORT || "3000");
 const SSE_PORT = parseInt(argv.ssePort || process.env.SSE_PORT || "3001");
 
