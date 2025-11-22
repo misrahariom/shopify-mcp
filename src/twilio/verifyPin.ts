@@ -4,9 +4,12 @@ import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
 export async function verifyPin(req: Request, res: Response) {
     const caller = req.body.From;
     const entered = req.body.Digits;
-    const customer = await findCustomerByPhone(caller);
+    const registeredPhone = req.query.registeredPhone;
+    console.log("Caller Number is:", caller, "Registered phone Number:", registeredPhone)
+     const phoneNumberToSearch=  registeredPhone ?? caller;
+    const customer = await findCustomerByPhone(phoneNumberToSearch);
     const expected = extractPin(customer);
-    console.log("Pin:expected::", expected, ":entered:",entered)
+    console.log("Pin Expected:", expected, "Entered:",entered)
     const agent_id = process.env.AGENT_ID || "";
     const wss_endpoint = process.env.WSS_ENDPOINT || "many-jars-make.loca.lt";
     const apiKey = encodeURIComponent(process.env.ELEVENLABS_API_KEY || "");
@@ -15,7 +18,7 @@ export async function verifyPin(req: Request, res: Response) {
         return res.type("text/xml").send(`
         <Response>
             <Say>PIN is not correct. Please re-enter your ${expected.length} digit PIN.</Say>
-            <Gather input="dtmf" numDigits="${expected.length}" action="/twilio/verify-pin">
+            <Gather input="dtmf" numDigits="${expected.length}" finishOnKey="#" action="/twilio/verify-pin?registeredPhone=${phoneNumberToSearch}">
             </Gather>
             <Hangup />
         </Response>
