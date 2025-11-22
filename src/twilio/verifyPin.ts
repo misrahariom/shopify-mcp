@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
+import { logger } from "../utils/logger.js";
 
 export async function verifyPin(req: Request, res: Response) {
     const caller = req.body.From;
     const entered = req.body.Digits;
     const registeredPhone = req.query.registeredPhone;
-    console.log("Caller Number is:", caller, "Registered phone Number:", registeredPhone)
-     const phoneNumberToSearch=  registeredPhone ?? caller;
+    logger.info("Caller Number is:", caller, "Registered phone Number:", registeredPhone)
+    const phoneNumberToSearch=  registeredPhone ?? caller;
     const customer = await findCustomerByPhone(phoneNumberToSearch);
     const expected = extractPin(customer);
-    console.log("Pin Expected:", expected, "Entered:",entered)
+    logger.info("Pin Expected:", expected, "Entered:",entered)
     const agent_id = process.env.AGENT_ID || "";
     const wss_endpoint = process.env.WSS_ENDPOINT || "many-jars-make.loca.lt";
     const apiKey = encodeURIComponent(process.env.ELEVENLABS_API_KEY || "");
@@ -27,7 +28,7 @@ export async function verifyPin(req: Request, res: Response) {
 
     // WSS stream url
     const streamUrl =`wss://${wss_endpoint}/media-stream-eleven?agent_id=${agent_id}` ;
-    console.log("Final Stream URL:", streamUrl);
+    logger.info("Final Stream URL:", streamUrl);
     const twiml = `
     <Response>
     <Say>Hello ${customer.displayName}. Pin is authenticated. Connecting you to AI Agent now.</Say>

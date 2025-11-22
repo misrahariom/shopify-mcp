@@ -1,9 +1,10 @@
 import { any } from "zod";
 import { shopifyClient } from "./shopifyClient.js";
+import { logger } from "../utils/logger.js";
 
 export async function findCustomerByPhone(phone: string) {
     const q = `phone:${phone}`;
-    console.log("GraphQL query:", q);
+    logger.info("GraphQL query:", q);
         const query = `
         query($q: String!) {
         customers(first: 1, query: $q) {
@@ -35,6 +36,6 @@ export function extractPin(customer: any) {
     const field = fields.find(
         (m:any) => m.node.namespace === "custom" && m.node.key === "pin"
     );
-    // console.log("PIN from DB:", field?.node?.value)
+    // logger.info("PIN from DB:", field?.node?.value)
     return field?.node?.value || null;
 }

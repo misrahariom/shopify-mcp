@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone,extractPin } from "../shopify/customerLookup.js";
+import { logger } from "../utils/logger.js";
 export async function inboundCall(req: Request, res: Response) {
     const caller = req.body.From;
     const enteredPhoneNumber = req.body.Digits;
-    console.log("Caller Number is:", caller, "Entered phone Number:", enteredPhoneNumber)
+    logger.info("Caller Number is:", caller, "Entered phone Number:", enteredPhoneNumber)
     const phoneNumberToSearch= enteredPhoneNumber ?? caller;
     const customer = await findCustomerByPhone(phoneNumberToSearch);
     if (!customer) {
@@ -19,7 +20,10 @@ export async function inboundCall(req: Request, res: Response) {
     const pin = extractPin(customer);
     const agent_id = process.env.AGENT_ID || "";
     const wss_endpoint = process.env.WSS_ENDPOINT || "many-jars-make.loca.lt";
-
+    const qs =
+    enteredPhoneNumber != null
+        ? `?registeredPhone=${encodeURIComponent(enteredPhoneNumber)}`
+        : "";
 
     // if (!pin) {
     //     return res.type("text/xml").send(`
@@ -34,7 +38,7 @@ export async function inboundCall(req: Request, res: Response) {
 
     return res.type("text/xml").send(`
         <Response>
-        <Gather input="dtmf" numDigits="${pin.length}" finishOnKey="#" action="/twilio/verify-pin?registeredPhone=${enteredPhoneNumber}">
+        <Gather input="dtmf" numDigits="${pin.length}" finishOnKey="#" action="/twilio/verify-pin${qs}">
             <Say>Hello ${customer.displayName}. Enter your ${pin.length} digit PIN.</Say>
         </Gather>
         </Response>
