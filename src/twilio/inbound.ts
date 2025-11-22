@@ -1,11 +1,18 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone,extractPin } from "../shopify/customerLookup.js";
 import { logger } from "../utils/logger.js";
+import { getSession, updateSession } from "./sessionStore.js";
+
 export async function inboundCall(req: Request, res: Response) {
     const caller = req.body.From;
+     const callSid = req.body.CallSid;
     const enteredPhoneNumber = req.body.Digits;
     logger.info("Caller Number is:", caller, "Entered phone Number:", enteredPhoneNumber)
     const phoneNumberToSearch= enteredPhoneNumber ?? caller;
+      // Start or reset attempts
+    const session = getSession(callSid);
+    session.attempts = 0;
+    updateSession(callSid, session);
     const customer = await findCustomerByPhone(phoneNumberToSearch);
     if (!customer) {
         return res.type("text/xml").send(`
@@ -17,10 +24,19 @@ export async function inboundCall(req: Request, res: Response) {
         `);
     }
 
+      // Save data in the session
+    updateSession(callSid, {
+        customerId: customer.id,
+        customerName: customer.displayName,
+        registeredPhone: caller,
+        stage: "awaiting_pin"
+    });
+
+
     const pin = extractPin(customer);
     const agent_id = process.env.AGENT_ID || "";
     const wss_endpoint = process.env.WSS_ENDPOINT || "many-jars-make.loca.lt";
-    const qs =
+    const requestQuery =
     enteredPhoneNumber != null
         ? `?registeredPhone=${encodeURIComponent(enteredPhoneNumber)}`
         : "";
@@ -38,7 +54,7 @@ export async function inboundCall(req: Request, res: Response) {
 
     return res.type("text/xml").send(`
         <Response>
-        <Gather input="dtmf" numDigits="${pin.length}" finishOnKey="#" action="/twilio/verify-pin${qs}">
+        <Gather input="dtmf" numDigits="${pin.length}" finishOnKey="#" action="/twilio/verify-pin${requestQuery}">
             <Say>Hello ${customer.displayName}. Enter your ${pin.length} digit PIN.</Say>
         </Gather>
         </Response>

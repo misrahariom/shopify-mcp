@@ -1,30 +1,59 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
 import { logger } from "../utils/logger.js";
+import { getSession, updateSession, clearSession } from "./sessionStore.js";
 
+const MAX_ATTEMPTS = 3;
 export async function verifyPin(req: Request, res: Response) {
+    
     const caller = req.body.From;
-    const entered = req.body.Digits;
+    const enteredPin = req.body.Digits;
     const registeredPhone = req.query.registeredPhone;
     logger.info("Caller Number is:", caller, "Registered phone Number:", registeredPhone)
     const phoneNumberToSearch=  registeredPhone ?? caller;
     const customer = await findCustomerByPhone(phoneNumberToSearch);
-    const expected = extractPin(customer);
-    logger.info("Pin Expected:", expected, "Entered:",entered)
+    const expectedPin = extractPin(customer);
+    logger.info("Expected Pin:", expectedPin, "Entered Pin:",enteredPin)
     const agent_id = process.env.AGENT_ID || "";
     const wss_endpoint = process.env.WSS_ENDPOINT || "many-jars-make.loca.lt";
     const apiKey = encodeURIComponent(process.env.ELEVENLABS_API_KEY || "");
 
-    if (!expected || entered !== expected) {
+    const requestQuery =
+    phoneNumberToSearch != null
+        ? `?registeredPhone=${encodeURIComponent(phoneNumberToSearch)}`
+        : "";
+    // get session    
+    const callSid = req.body.CallSid;
+    const session = getSession(callSid);
+    session.attempts += 1;
+    // Exceeded attempts?
+    if (session.attempts >= MAX_ATTEMPTS) {
+        clearSession(callSid);
         return res.type("text/xml").send(`
         <Response>
-            <Say>PIN is not correct. Please re-enter your ${expected.length} digit PIN.</Say>
-            <Gather input="dtmf" numDigits="${expected.length}" finishOnKey="#" action="/twilio/verify-pin?registeredPhone=${phoneNumberToSearch}">
+            <Say>You have exceeded maximum attempts. Goodbye.</Say>
+            <Hangup/>
+        </Response>
+        `.trim());
+    }
+    if (!expectedPin || enteredPin !== expectedPin) {
+        const remainingAttempt = MAX_ATTEMPTS - session.attempts;
+        logger.info("remaining attempts", remainingAttempt)
+        return res.type("text/xml").send(`
+        <Response>
+            <Say>PIN is not correct. You have ${remainingAttempt} attempts left. Please re-enter your ${expectedPin.length} digit PIN.</Say>
+            <Gather input="dtmf" numDigits="${expectedPin.length}" finishOnKey="#" action="/twilio/verify-pin${requestQuery}">
             </Gather>
             <Hangup />
         </Response>
         `);
     }
+
+    
+    // Success!
+    updateSession(callSid, { stage: "verified" });
+
+    logger.info("PIN verified for:", session.customerId, session.customerName);
 
     // WSS stream url
     const streamUrl =`wss://${wss_endpoint}/media-stream-eleven?agent_id=${agent_id}` ;
