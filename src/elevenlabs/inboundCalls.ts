@@ -31,12 +31,12 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
             },
 
             conversation_config_override: {
-                // agent: {
-                //     prompt: {
-                //         prompt: "No customer record exists for this caller. Speak generically."
-                //     },
-                // // first_message: "Hi, how may I help you today?"
-                // }
+                agent: {
+                    prompt: {
+                        prompt: "No customer record exists for this caller. Speak generically."
+                    },
+                first_message: "Hi there, How may I help you today?"
+                }
             }
         };
         logger.info("ElevenLabs Response:", responseBody);
@@ -52,11 +52,13 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
         });
 
         const pin = extractPin(customer);
-        const wss_endpoint = process.env.WSS_ENDPOINT || "many-jars-make.loca.lt";
-        const requestQuery =
-            enteredPhoneNumber != null
-                ? `?registeredPhone=${encodeURIComponent(enteredPhoneNumber)}`
-                : "";
+
+        const displayName =
+            customer?.displayName && customer.displayName.trim().length > 0
+                ? customer.displayName
+                : "there"
+
+        const firstMessage = `Hi ${displayName}, how can I help you today?`
 
         const responseBody = {
             type: "conversation_initiation_client_data",
@@ -69,13 +71,13 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
             },
 
             conversation_config_override: {
-                // agent: {
-                //     prompt: {
-                //         prompt:
-                //             "Please confirm if customers PIN. If not, request it again."
-                //     },
-                //    // first_message: "Hi ${customer.displayName}, how can I help you today?"
-                // }
+                agent: {
+                    prompt: {
+                        prompt:
+                            "Please ask the customer for the PIN. If it matches, Go ahead else, ask it again. Try this for 3 times and end the call if not successful."
+                    },
+                   first_message: firstMessage
+                }
             },
 
             custom_llm_extra_body: {
