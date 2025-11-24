@@ -15,7 +15,7 @@ let shopifyClient: GraphQLClient;
 
 const getCustomers = {
   name: "get-customers",
-  description: "Get customers or search by name/email",
+  description: "Get customers or search by name/email/phone",
   schema: GetCustomersInputSchema,
 
   // Add initialize method to set up the GraphQL client
@@ -63,6 +63,15 @@ const getCustomers = {
                   currencyCode
                 }
                 numberOfOrders
+                metafields(first: 10) {
+                  edges {
+                    node {
+                      namespace
+                      key
+                      value
+                    }
+                  }
+                }
               }
             }
           }
@@ -102,8 +111,7 @@ const getCustomers = {
     } catch (error) {
       console.error("Error fetching customers:", error);
       throw new Error(
-        `Failed to fetch customers: ${
-          error instanceof Error ? error.message : String(error)
+        `Failed to fetch customers: ${error instanceof Error ? error.message : String(error)
         }`
       );
     }
