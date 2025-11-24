@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
 import { logger } from "../utils/logger.js";
-import { getSession, updateSession, clearSession } from "./sessionStore.js";
+import { getSession, updateSession, clearSession } from "../utils/sessionStore.js";
 
 const MAX_ATTEMPTS = 3;
 export async function verifyPin(req: Request, res: Response) {

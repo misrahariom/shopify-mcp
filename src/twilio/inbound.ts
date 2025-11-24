@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone,extractPin } from "../shopify/customerLookup.js";
 import { logger } from "../utils/logger.js";
-import { getSession, updateSession } from "./sessionStore.js";
+import { getSession, updateSession } from "../utils/sessionStore.js";
 
 export async function inboundCall(req: Request, res: Response) {
+    logger.info("request", req);
     const caller = req.body.From;
-     const callSid = req.body.CallSid;
+    const callSid = req.body.CallSid;
     const enteredPhoneNumber = req.body.Digits;
     logger.info("Caller Number is:", caller, "Entered phone Number:", enteredPhoneNumber)
     const phoneNumberToSearch= enteredPhoneNumber ?? caller;
