@@ -1,7 +1,7 @@
 import { any } from "zod";
 import { shopifyClient } from "./shopifyClient.js";
-import { logger } from "../utils/logger.js";
-
+import { createLogger } from "../utils/logger.js";
+const logger = createLogger("customerLookup.ts");
 export async function findCustomerByPhone(phone: string) {
     const q = `phone:${phone}`;
     logger.info("GraphQL query:", q);

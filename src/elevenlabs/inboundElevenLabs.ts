@@ -1,27 +1,20 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
-import { logger } from "../utils/logger.js";
-import { getSession, updateSession } from "../utils/sessionStore.js";
-
+import { createLogger } from "../utils/logger.js";
+const logger = createLogger("inboundElevenLabs.ts");
 export async function elevenLabsInitiationCall(req: Request, res: Response) {
     try {
         logger.info("ElevenLabs Request Body:", req.body);
         const caller = req.body.caller_id;
-        const callSid = req.body.call_sid;
         const agent_id = req.body.agent_id;
-        const enteredPhoneNumber = req.body.pin;
-        logger.info("Caller Number is:", caller, "agent_id:", agent_id)
-        const phoneNumberToSearch = enteredPhoneNumber ?? caller;
-        // Start or reset attempts
-        const session = getSession(callSid);
-        session.attempts = 0;
-        updateSession(callSid, session);
+        const enteredData = req.body.pin;
+        logger.info("Caller Number is:", caller, "agent_id:", agent_id, "enteredPhoneNumber", enteredData)
+        const phoneNumberToSearch = enteredData ?? caller;
         const customer = await findCustomerByPhone(phoneNumberToSearch);
         logger.info("customer data:", customer)
 
         // handles null AND undefined AND empty
         if (!customer) {
-
             const agentPrompt = `
             Ask the caller for their registered phone number.
             When they share it, search for the customer using the "get-customers" tool.
@@ -32,20 +25,18 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
             If all attempts fail, tell the caller they reached the limit and they should hang up and call again.
             `;
 
-
             const responseBody = {
                 type: "conversation_initiation_client_data",
                 dynamic_variables: {
                     customer_exists: false,
-                    caller,
-                    call_sid: callSid
+                    caller
                 },
 
                 conversation_config_override: {
                     agent: {
                         prompt: {
                             prompt: agentPrompt
-                    },
+                        },
                         first_message: "Hi there, How may I help you today?"
                     }
                 }
@@ -53,14 +44,6 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
             logger.info("ElevenLabs Response:", responseBody);
             return res.status(200).json(responseBody);
         }
-
-        // Save data in the session
-        updateSession(callSid, {
-            customerId: customer?.id,
-            customerName: customer?.displayName,
-            registeredPhone: caller,
-            stage: "awaiting_pin"
-        });
 
         const pin = extractPin(customer);
 
@@ -78,8 +61,7 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
                 customer_name: customer.displayName,
                 customerId: customer.id,
                 pin: pin,
-                caller,
-                call_sid: callSid
+                caller
             },
 
             conversation_config_override: {
@@ -93,8 +75,6 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
             },
 
             custom_llm_extra_body: {
-                //temperature: 0.4,
-                //max_tokens: 1200
             }
         }
         logger.info("ElevenLabs Response:", responseBody);

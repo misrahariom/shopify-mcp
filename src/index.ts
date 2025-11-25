@@ -12,8 +12,7 @@ import cors from 'cors';
 import bodyParser from "body-parser";
 import { inboundCall } from "./twilio/inbound.js";
 import { verifyPin } from "./twilio/verifyPin.js";
-import { elevenLabsInitiationCall } from "./elevenlabs/inboundCalls.js";
-import { logger } from "./utils/logger.js";
+import { elevenLabsInitiationCall } from "./elevenlabs/inboundElevenLabs.js";
 
 // Import tools
 import { getCustomerOrders } from "./tools/getCustomerOrders.js";
@@ -28,6 +27,9 @@ import { updateOrder } from "./tools/updateOrder.js";
 import { createProduct } from "./tools/createProduct.js";
 import { getDiscounts } from "./tools/getDiscount.js";
 import { argv, shopifyClient } from "./shopify/shopifyClient.js";
+
+import { createLogger } from "./utils/logger.js";
+const logger = createLogger("index.ts");
 
 // Server configuration
 const TRANSPORT_TYPE = argv.transport || process.env.TRANSPORT_TYPE || "http";

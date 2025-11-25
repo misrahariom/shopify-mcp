@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
-import { logger } from "../utils/logger.js";
+import { createLogger } from "../utils/logger.js";
 import { getSession, updateSession, clearSession } from "../utils/sessionStore.js";
 
 const MAX_ATTEMPTS = 3;
+const logger = createLogger("verifyPin.ts");
 export async function verifyPin(req: Request, res: Response) {
-    
     const caller = req.body.From;
     const enteredPin = req.body.Digits;
     const registeredPhone = req.query.registeredPhone;

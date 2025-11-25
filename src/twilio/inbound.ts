@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone,extractPin } from "../shopify/customerLookup.js";
-import { logger } from "../utils/logger.js";
 import { getSession, updateSession } from "../utils/sessionStore.js";
+import { createLogger } from "../utils/logger.js";
+const logger = createLogger("inbound.ts");
 
 export async function inboundCall(req: Request, res: Response) {
     logger.info("request", req);

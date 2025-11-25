@@ -1,6 +1,8 @@
 import { GraphQLClient } from "graphql-request";
 import dotenv from "dotenv";
 import minimist from "minimist";
+import { createLogger } from "../utils/logger.js";
+const logger = createLogger("shopifyClient.ts");
 
 // Parse command line arguments
 export const argv = minimist(process.argv.slice(2));
@@ -15,15 +17,15 @@ process.env.SHOPIFY_ACCESS_TOKEN = SHOPIFY_ACCESS_TOKEN;
 process.env.MYSHOPIFY_DOMAIN = MYSHOPIFY_DOMAIN;
 // Validate required environment variables
 if (!SHOPIFY_ACCESS_TOKEN) {
-  console.error("Error: SHOPIFY_ACCESS_TOKEN is required.");
-  console.error("Please provide it via command line argument or .env file.");
-  console.error("  Command line: --accessToken=your_token");
+  logger.error("Error: SHOPIFY_ACCESS_TOKEN is required.");
+  logger.error("Please provide it via command line argument or .env file.");
+  logger.error("  Command line: --accessToken=your_token");
   process.exit(1);
 }
 if (!MYSHOPIFY_DOMAIN) {
-  console.error("Error: MYSHOPIFY_DOMAIN is required.");
-  console.error("Please provide it via command line argument or .env file.");
-  console.error("  Command line: --domain=your-store.myshopify.com");
+  logger.error("Error: MYSHOPIFY_DOMAIN is required.");
+  logger.error("Please provide it via command line argument or .env file.");
+  logger.error("  Command line: --domain=your-store.myshopify.com");
   process.exit(1);
 }
 
