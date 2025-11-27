@@ -60,11 +60,11 @@ export async function verifyPin(req: Request, res: Response) {
     logger.info("Final Stream URL:", streamUrl);
     const twiml = `
     <Response>
-    <Say>Hello ${customer.displayName}. Pin is authenticated. Connecting you to AI Agent now.</Say>
-    <Pause length="1"/>
-    <Connect>
-        <Stream url="${streamUrl}" />
-    </Connect>
+        <Say>Hello ${customer.displayName}. Pin is authenticated. Connecting you to AI Agent now.</Say>
+            <Pause length="1"/>
+                <Connect>
+                    <Stream url="${streamUrl}" />
+                </Connect>
     </Response>
     `;
     return res.type("text/xml").send(twiml);
