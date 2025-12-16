@@ -13,18 +13,42 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
         const customer = await findCustomerByPhone(phoneNumberToSearch);
         logger.info("customer data:", customer)
 
+        const agentPrompt = `
+                You may converse freely and answer general non-account questions without authentication.
+
+                If the caller asks about an order, delivery status, tracking, returns, cancellations, refunds, account information, or any other restricted details, authentication is required before providing an answer.
+
+                If the customer has not been identified earlier, ask for their registered phone number and use the “get-customers” tool to retrieve their account.
+
+                If the caller provides an incorrect or unmatched phone number, allow up to three attempts. 
+                After three failed attempts, inform the caller that you cannot verify their identity and ask them to call back later. 
+                Do not provide any restricted information.
+
+                When a phone number is provided, compare it with the phone number stored in the customer record. 
+                If the numbers do not match, say:
+                "For security reasons, I cannot provide information about this request because the phone number does not match the account owner."
+                Do not proceed further or provide any restricted details.
+
+                If the phone numbers match, ask the caller for their PIN. They may enter the PIN using the phone keypad or speak it aloud.
+
+                If the caller speaks the PIN, acknowledge neutrally with a phrase like "Thank you" or "Got it," without repeating or confirming the digits.
+
+                Compare the provided PIN with the stored PIN.
+                If the PIN does not match, allow up to three attempts. After three failed attempts, inform the caller that they have reached the limit and must call back later. Do not provide any restricted details.
+
+                If the PIN matches, confirm authentication and proceed.
+
+                After the caller is authenticated, you may fetch and provide restricted details such as order status or account information.
+
+                Before providing any restricted information, always verify that the authenticated phone number matches the phone number associated with the specific order or account being requested.
+
+                If the phone numbers do not match, say:
+                "For security reasons, I cannot provide information about this order because the phone number does not match the account owner."
+                Do not provide any restricted information and do not continue.
+                `;
+
         // handles null AND undefined AND empty
         if (!customer) {
-            const agentPrompt = `
-            Ask the caller for their registered phone number.
-            When they share it, search for the customer using the "get-customers" tool.
-            If you find a customer, ask for their PIN.
-            Compare the PIN with the stored PIN in the tool response.
-            If it matches, confirm authentication and continue with the caller’s request.
-            If the PIN is wrong, allow up to three attempts.
-            If all attempts fail, tell the caller they reached the limit and they should hang up and call again.
-            `;
-
             const responseBody = {
                 type: "conversation_initiation_client_data",
                 dynamic_variables: {
@@ -68,7 +92,7 @@ export async function elevenLabsInitiationCall(req: Request, res: Response) {
                 agent: {
                     prompt: {
                         prompt:
-                            instruction
+                            agentPrompt
                     },
                     first_message: firstMessage
                 }

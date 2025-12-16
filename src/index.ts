@@ -282,8 +282,14 @@ const app = express();
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.post("/twilio/inbound", inboundCall);
+// This endpoint can be configured in twilio when a call is received. 
+// In this scenario,first user will be validated using phone 
+// If phone number is not found , it will ask the registered mobile number. 
+// Then pin is verified using /verify-pin endpoint. 
+// If successful, then transferred to elevenlabs agent using wss://{{url}}/media-stream-eleven endpoint in conversational-ai-twilio repo.
+app.post("/twilio/inbound_call", inboundCall);
 app.post("/twilio/verify-pin", verifyPin);
+// This endpoint will be called from elevenlabs agent as a "Conversation Initiation Client Data Webhook"
 app.post("/elevenlabs/initiation", elevenLabsInitiationCall);
 
 // Function to start server with different transports
