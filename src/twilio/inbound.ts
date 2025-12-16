@@ -1,11 +1,14 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone,extractPin } from "../shopify/customerLookup.js";
-import { logger } from "../utils/logger.js";
-import { getSession, updateSession } from "./sessionStore.js";
+import { getSession, updateSession } from "../utils/sessionStore.js";
+import { createLogger } from "../utils/logger.js";
+import { buildGatherResponse } from "../utils/gatherTwiml.js";
+const logger = createLogger("inbound.ts");
 
 export async function inboundCall(req: Request, res: Response) {
+    logger.info("request", req);
     const caller = req.body.From;
-     const callSid = req.body.CallSid;
+    const callSid = req.body.CallSid;
     const enteredPhoneNumber = req.body.Digits;
     logger.info("Caller Number is:", caller, "Entered phone Number:", enteredPhoneNumber)
     const phoneNumberToSearch= enteredPhoneNumber ?? caller;
@@ -15,13 +18,14 @@ export async function inboundCall(req: Request, res: Response) {
     updateSession(callSid, session);
     const customer = await findCustomerByPhone(phoneNumberToSearch);
     if (!customer) {
-        return res.type("text/xml").send(`
-        <Response>
-            <Gather input="dtmf" finishOnKey="#" action="/twilio/inbound">
-                  <Say>Sorry, We could not identify you. Please enter you registered mobile number.</Say>
-            </Gather>
-        </Response>
-        `);
+        return res
+        .type("text/xml")
+        .send(
+            buildGatherResponse({
+            message: "Sorry, we could not identify you. Please enter your registered mobile number.",
+            action: "/twilio/inbound"
+            })
+        );
     }
 
       // Save data in the session
@@ -52,11 +56,13 @@ export async function inboundCall(req: Request, res: Response) {
     //     `);
     // }
 
-    return res.type("text/xml").send(`
-        <Response>
-        <Gather input="dtmf" numDigits="${pin.length}" finishOnKey="#" action="/twilio/verify-pin${requestQuery}">
-            <Say>Hello ${customer.displayName}. Enter your ${pin.length} digit PIN.</Say>
-        </Gather>
-        </Response>
-    `);
+    return res
+    .type("text/xml")
+    .send(
+        buildGatherResponse({
+        message: `Hello ${customer.displayName}. Enter your ${pin.length} digit PIN.`,
+        action: `/twilio/verify-pin${requestQuery}`,
+        numDigits: pin.length
+        })
+    );
 }

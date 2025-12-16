@@ -12,6 +12,7 @@ import cors from 'cors';
 import bodyParser from "body-parser";
 import { inboundCall } from "./twilio/inbound.js";
 import { verifyPin } from "./twilio/verifyPin.js";
+import { elevenLabsInitiationCall } from "./elevenlabs/inboundElevenLabs.js";
 
 // Import tools
 import { getCustomerOrders } from "./tools/getCustomerOrders.js";
@@ -26,6 +27,9 @@ import { updateOrder } from "./tools/updateOrder.js";
 import { createProduct } from "./tools/createProduct.js";
 import { getDiscounts } from "./tools/getDiscount.js";
 import { argv, shopifyClient } from "./shopify/shopifyClient.js";
+
+import { createLogger } from "./utils/logger.js";
+const logger = createLogger("index.ts");
 
 // Server configuration
 const TRANSPORT_TYPE = argv.transport || process.env.TRANSPORT_TYPE || "http";
@@ -278,8 +282,15 @@ const app = express();
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.post("/twilio/inbound", inboundCall);
+// This endpoint can be configured in twilio when a call is received. 
+// In this scenario,first user will be validated using phone 
+// If phone number is not found , it will ask the registered mobile number. 
+// Then pin is verified using /verify-pin endpoint. 
+// If successful, then transferred to elevenlabs agent using wss://{{url}}/media-stream-eleven endpoint in conversational-ai-twilio repo.
+app.post("/twilio/inbound_call", inboundCall);
 app.post("/twilio/verify-pin", verifyPin);
+// This endpoint will be called from elevenlabs agent as a "Conversation Initiation Client Data Webhook"
+app.post("/elevenlabs/initiation", elevenLabsInitiationCall);
 
 // Function to start server with different transports
 async function startServer() {
@@ -287,14 +298,14 @@ async function startServer() {
   try {
     switch (TRANSPORT_TYPE.toLowerCase()) {
       case "stdio":
-        console.error("Starting MCP server with STDIO transport...");
+        logger.warn("Starting MCP server with STDIO transport...");
         const stdioTransport = new StdioServerTransport();
         await server.connect(stdioTransport);
-        console.error("STDIO server started successfully");
+        logger.warn("STDIO server started successfully");
         break;
 
       case "sse":
-        console.error(`Starting MCP server with SSE transport on port ${SSE_PORT}...`);
+        logger.warn(`Starting MCP server with SSE transport on port ${SSE_PORT}...`);
         const sseTransport = {sse: {} as Record<string, SSEServerTransport>};
         app.get('/sse', async (req, res) => {
           const transport = new SSEServerTransport('/messages', res);
@@ -317,11 +328,11 @@ async function startServer() {
         });
 
         app.listen(SSE_PORT);
-        console.error(`SSE server started on http://localhost:${SSE_PORT}/sse`);
+        logger.warn(`SSE server started on http://localhost:${SSE_PORT}/sse`);
         break;
 
       case "http":
-        console.error(`Starting MCP server with StreamableHTTP transport on port ${HTTP_PORT}...`);
+        logger.warn(`Starting MCP server with StreamableHTTP transport on port ${HTTP_PORT}...`);
         // Map to store transports by session ID
         const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
@@ -389,42 +400,42 @@ async function startServer() {
         app.delete('/mcp', handleSessionRequest);
 
         app.listen(HTTP_PORT);
-        console.error(`StreamableHTTP server started on http://localhost:${HTTP_PORT}/mcp`);
+        logger.warn(`StreamableHTTP server started on http://localhost:${HTTP_PORT}`);
         break;
       default:
-        console.error(`Unknown transport type: ${TRANSPORT_TYPE}`);
-        console.error("Available options: stdio, sse, http, streamable, all");
+        logger.error(`Unknown transport type: ${TRANSPORT_TYPE}`);
+        logger.error("Available options: stdio, sse, http, streamable, all");
         process.exit(1);
     }
   } catch (error) {
-    console.error("Failed to start server:", error);
+    logger.error("Failed to start server:", error);
     process.exit(1);
   }
 }
 
 // Handle graceful shutdown
 process.on("SIGINT", async () => {
-  console.error("\nReceived SIGINT, shutting down gracefully...");
+  logger.error("\nReceived SIGINT, shutting down gracefully...");
   try {
     const server = getServer();
     await server.close();
-    console.error("Server closed successfully");
+    logger.error("Server closed successfully");
     process.exit(0);
   } catch (error) {
-    console.error("Error during shutdown:", error);
+    logger.error("Error during shutdown:", error);
     process.exit(1);
   }
 });
 
 process.on("SIGTERM", async () => {
-  console.error("\nReceived SIGTERM, shutting down gracefully...");
+  logger.error("\nReceived SIGTERM, shutting down gracefully...");
   try {
     const server = getServer();
     await server.close();
-    console.error("Server closed successfully");
+    logger.error("Server closed successfully");
     process.exit(0);
   } catch (error) {
-    console.error("Error during shutdown:", error);
+    logger.error("Error during shutdown:", error);
     process.exit(1);
   }
 });

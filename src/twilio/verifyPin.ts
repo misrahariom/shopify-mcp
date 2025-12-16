@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { findCustomerByPhone, extractPin } from "../shopify/customerLookup.js";
-import { logger } from "../utils/logger.js";
-import { getSession, updateSession, clearSession } from "./sessionStore.js";
+import { createLogger } from "../utils/logger.js";
+import { getSession, updateSession, clearSession } from "../utils/sessionStore.js";
 
 const MAX_ATTEMPTS = 3;
+const logger = createLogger("verifyPin.ts");
 export async function verifyPin(req: Request, res: Response) {
-    
     const caller = req.body.From;
     const enteredPin = req.body.Digits;
     const registeredPhone = req.query.registeredPhone;
@@ -60,11 +60,11 @@ export async function verifyPin(req: Request, res: Response) {
     logger.info("Final Stream URL:", streamUrl);
     const twiml = `
     <Response>
-    <Say>Hello ${customer.displayName}. Pin is authenticated. Connecting you to AI Agent now.</Say>
-    <Pause length="1"/>
-    <Connect>
-        <Stream url="${streamUrl}" />
-    </Connect>
+        <Say>Hello ${customer.displayName}. Pin is authenticated. Connecting you to AI Agent now.</Say>
+            <Pause length="1"/>
+                <Connect>
+                    <Stream url="${streamUrl}" />
+                </Connect>
     </Response>
     `;
     return res.type("text/xml").send(twiml);
