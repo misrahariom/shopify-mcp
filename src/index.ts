@@ -282,6 +282,23 @@ const app = express();
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+// Welcome endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Welcome to my mcp'
+  });
+});
+
+// Health check endpoint
+app.get('/healthz', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+
 // This endpoint can be configured in twilio when a call is received. 
 // In this scenario,first user will be validated using phone 
 // If phone number is not found , it will ask the registered mobile number. 
